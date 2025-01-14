@@ -1,2 +1,3 @@
 # ETL_Development
-SQL programs for current job
+
+SQL code for data extraction for data migration from CX/Jenzabar to Oracle

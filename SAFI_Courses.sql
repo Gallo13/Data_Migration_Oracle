@@ -16,37 +16,41 @@ CREATE TEMP TABLE TempBeginEndDates (
 
 -- Insert data into the temporary table
 INSERT INTO TempBeginEndDates (id, prog, sess, subsess, yr, year_begin_date, year_end_date, term_begin_date, term_end_date)
-SELECT 
+SELECT DISTINCT
   acad.id, 
   acad.prog,
   acad.sess, 
   cal.subsess,
   acad.yr,
-  TO_CHAR( 
   CASE 
-    WHEN acad.sess = 'SP' THEN ADD_MONTHS(cal.beg_date, -12)
-    ELSE cal.beg_date 
-  END, '%Y-%m-%d') AS year_begin_date,
-  TO_CHAR( 
+    -- Standardize to August 26 of the year
+    WHEN acad.sess = 'SP' THEN (acad.yr - 1) || '-08-26'
+    WHEN acad.sess = 'FA' THEN acad.yr || '-08-26'
+    WHEN acad.sess = 'SU' THEN acad.yr || '-08-26'
+    ELSE TO_CHAR(cal.beg_date, 'YYYY-MM-DD')
+  END AS year_begin_date,
   CASE 
-    WHEN acad.sess = 'FA' THEN ADD_MONTHS(cal.beg_date, +9)
-    WHEN acad.sess = 'SU' THEN ADD_MONTHS(cal.beg_date, +11)
-    ELSE cal.end_date 
-  END, '%Y-%m-%d') AS year_end_date,
+    -- Standardize to May 14 of the year
+    WHEN acad.sess = 'SP' THEN acad.yr || '-05-14'
+    WHEN acad.sess = 'FA' THEN (acad.yr + 1) || '-05-14'
+    WHEN acad.sess = 'SU' THEN (acad.yr + 1) || '-05-14'
+    ELSE TO_CHAR(cal.end_date, 'YYYY-MM-DD')
+  END AS year_end_date,
   TO_CHAR(cal.beg_date, '%Y-%m-%d') AS term_begin_date,
   TO_CHAR(cal.end_date, '%Y-%m-%d') AS term_end_date
-FROM acad_cal_rec AS cal
-JOIN stu_acad_rec AS acad ON cal.prog = acad.prog AND cal.yr = acad.yr
-WHERE cal.prog = acad.prog AND cal.sess = 'FA' AND cal.yr = acad.yr;
+FROM stu_acad_rec AS acad
+JOIN acad_cal_rec AS cal ON cal.prog=acad.prog AND cal.yr=acad.yr AND cal.sess=acad.sess
+JOIN cw_rec AS cw ON acad.id=cw.id AND cal.prog=cw.prog AND cal.yr=cw.yr AND cal.sess=cw.sess AND cal.subsess=cw.subsess
+WHERE (cal.prog = acad.prog AND cal.yr = acad.yr) AND acad.yr>2003;
 
 -- Main
-SELECT 
+SELECT DISTINCT
   cw.id AS ExternalStudentId,
-  crs.prog AS ExternalProgramId,
+  prog.major1 AS ExternalProgramId,
   crs.crs_no AS ExternalCourseID,
   crs.title1 || crs.title2 || crs.title3 AS Description,
   CASE
-    -- WHEN THEN 'Projected'
+    -- WHEN cw.stat='' THEN 'Projected'
     -- WHEN cw.stat='' THEN 'Scheduled'
     -- WHEN cw.stat='' THEN 'Passed'
     WHEN cw.stat='W' THEN 'Withdrawn'
@@ -59,7 +63,7 @@ SELECT
   '' AS FirstAraIndicator,  -- leave blank
   '' AS IncompleteResolutionDate,  -- leave blank
   cw.grd AS Grade,
-  cw.hrs AS Units,
+  CAST(cw.hrs AS DECIMAL(10, 2)) AS Units,
   '' AS DegreeApplicationUnits,  -- leave blank
   '' AS Comments,  -- leave blank
   CAST(acad.gpa AS DECIMAL(10, 2)) AS ProgramGpaAtCourseEnd,
@@ -72,16 +76,17 @@ SELECT
   END AS Modality,
   '' AS SapApplicable,  -- leave blank
   'FALSE' AS RepeatIndicator,  -- default False
-  be.term_begin_date AS TermStartDate,  -- same as start date?
+  --be.term_begin_date AS TermStartDate,  -- same as start date?
+  be.term_begin_date AS TermStartDate,
   '' AS Schedule,  -- leave blank
   be.term_begin_date AS ScheduledInstructionStartDate,  -- same as start date?
   be.term_end_date AS ScheduledInstructionEndDate  -- same as end date?
  FROM cw_rec AS cw 
- JOIN crs_rec AS crs ON cw.crs_no=crs.crs_no AND cw.cat=crs.cat
+ JOIN crs_rec AS crs ON cw.crs_no=crs.crs_no AND cw.cat=crs.cat --AND cw.prog=cr.prog
  JOIN stu_acad_rec AS acad ON cw.id=acad.id AND cw.sess=acad.sess AND cw.yr=acad.yr AND cw.prog=acad.prog
  JOIN secmtg_rec AS secm ON cw.crs_no=secm.crs_no AND cw.cat=secm.cat AND cw.yr=secm.yr AND cw.sess=secm.sess AND cw.sec=secm.sec_no
- JOIN mtg_rec AS mtg ON secm.mtg_no=mtg.mtg_no
- JOIN prog_enr_rec AS prog ON cw.id=prog.id
+ JOIN mtg_rec AS mtg ON secm.mtg_no=mtg.mtg_no AND secm.yr=mtg.yr AND secm.sess=mtg.sess 
+ JOIN prog_enr_rec AS prog ON cw.id=prog.id AND cw.prog=prog.prog
  JOIN acad_cal_rec AS cal ON acad.prog=cal.prog AND acad.sess=cal.sess AND acad.yr=cal.yr
- JOIN TempBeginEndDates AS be ON acad.id=be.id AND acad.sess=be.sess AND acad.yr=be.yr AND cal.subsess=be.subsess
- WHERE (prog.acst='RENR' OR prog.acst='ENRF' OR prog.acst='ENRP') AND acad.reg_hrs>0 AND acad.wd_code<>'WD';
+ JOIN TempBeginEndDates AS be ON cw.id=be.id AND cw.sess=be.sess AND cw.yr=be.yr --AND cal.subsess=be.subsess
+ WHERE (prog.acst='RENR' OR prog.acst='ENRF' OR prog.acst='ENRP') AND (acad.reg_hrs>0 AND acad.wd_code<>'WD') AND YEAR(TO_DATE(be.term_begin_date, '%Y-%m-%d'))>2003; -- AND cw.id='443154';

@@ -58,20 +58,20 @@ SELECT DISTINCT
   id.id AS ExternalStudentID,
   major.major AS ExternalProgramID,
    CASE
-    WHEN prog.prog = 'NONU' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'NONC' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'NONG' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'PREC' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'UPST' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'POST' THEN 'Non-credential' || 'Gound'
-    WHEN prog.prog = 'UUDG' THEN 'Bachelors' || 'Gound'
-    WHEN prog.prog = 'UUD2' THEN 'Bachelors' || 'Gound'
-    WHEN prog.prog = 'GRAD' THEN 'Graduate' || 'Gound'
-    WHEN prog.prog = 'GRA2' THEN 'Graduate' || 'Gound'
-    WHEN prog.prog = 'GRA3' THEN 'Graduate' || 'Gound'
-    WHEN prog.prog = 'EMBA' THEN 'Graduate' || 'Gound'
-    WHEN prog.prog = 'CERT' THEN 'Certificate (Graduate)' || 'Gound'
-    WHEN prog.prog = 'DOCT' THEN 'Doctoral' || 'Gound'
+    WHEN prog.prog = 'NONU' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'NONC' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'NONG' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'PREC' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'UPST' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'POST' THEN 'Non-credential' || 'Ground'
+    WHEN prog.prog = 'UUDG' THEN 'Bachelors' || 'Ground'
+    WHEN prog.prog = 'UUD2' THEN 'Bachelors' || 'Ground'
+    WHEN prog.prog = 'GRAD' THEN 'Graduate' || 'Ground'
+    WHEN prog.prog = 'GRA2' THEN 'Graduate' || 'Ground'
+    WHEN prog.prog = 'GRA3' THEN 'Graduate' || 'Ground'
+    WHEN prog.prog = 'EMBA' THEN 'Graduate' || 'Ground'
+    WHEN prog.prog = 'CERT' THEN 'Certificate (Graduate)' || 'Ground'
+    WHEN prog.prog = 'DOCT' THEN 'Doctoral' || 'Ground'
   END AS Code,
   major.txt AS Description,
   CASE
@@ -100,7 +100,7 @@ SELECT DISTINCT
   -- need to check for special programs
   'N' AS SpecialPrograms,
   major.cip_no AS ProgramCipCode,
-  'years' AS ProgramLengthMeasurementUnit,
+  'Years' AS ProgramLengthMeasurementUnit,
   CASE
     WHEN prog.prog = 'NONU' THEN '0'
     WHEN prog.prog = 'NONC' THEN '2'
@@ -117,7 +117,7 @@ SELECT DISTINCT
     WHEN prog.prog = 'CERT' THEN '2'
     WHEN prog.prog = 'DOCT' THEN '2'
   END AS NumberOfUnits,
-  'credit' AS ProgramMeasurementUnit,
+  'Credit' AS ProgramMeasurementUnit,
   stat.trnsfr_earn_hrs AS AssessedUnits,
   CASE
     WHEN prog.prog = 'NONU' THEN '0'
@@ -146,7 +146,7 @@ SELECT DISTINCT
   CAST('00002899' AS VARCHAR(8)) AS OpeID,
   'Ground' AS Modality,
   'True' AS FaEligibleIndicator,
-  'credit' AS AcademicYearMeasurementUnit,
+  'Credit' AS AcademicYearMeasurementUnit,
   CASE
     WHEN prog.prog = 'NONU' THEN '0'
     WHEN prog.prog = 'NONC' THEN '0'
@@ -209,7 +209,7 @@ SELECT DISTINCT
     ELSE NULL
   END AS EnrollmentStatusSubType,
   TO_CHAR(stat.upd_date, '%Y-%m-%d') AS EnrollmentStatusEffectiveData,
-  'Am' AS AdmissionStatus,
+  'AM' AS AdmissionStatus,
   'RG' AS AcademicStatus,
   'FALSE' AS ManualSapEvalutationIndictator,
   '' AS ReturnToTitleIvSafiIndicator
@@ -217,6 +217,8 @@ FROM id_rec AS id
 JOIN prog_enr_rec AS prog ON id.id = prog.id
 JOIN major_table AS major ON prog.major1 = major.major
 JOIN stu_stat_rec AS stat ON id.id = stat.id AND stat.prog = prog.prog
+JOIN cw_rec AS cw ON prog.id=cw.id
+JOIN stu_acad_rec AS acad ON cw.id=acad.id AND cw.sess=acad.sess AND cw.yr=acad.yr AND cw.prog=acad.prog
 LEFT JOIN (
     SELECT t1.*
     FROM TempChangeOfProgramStartDate t1
@@ -226,4 +228,4 @@ LEFT JOIN (
         GROUP BY id
     ) t2 ON t1.id = t2.id AND t1.ChangeOfProgramStartDate = t2.MaxDate
 ) AS t ON id.id = t.id
-WHERE (prog.acst = 'RENR' OR prog.acst = 'ENRF' OR prog.acst = 'ENRP') --AND id.id='593712'
+WHERE (prog.acst = 'RENR' OR prog.acst = 'ENRF' OR prog.acst = 'ENRP'); -- AND

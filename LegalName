@@ -1,0 +1,36 @@
+SELECT
+  aid.id AS StudentId,
+  'LegalName' AS DocumentCode,
+  -- active_date,
+  CASE 
+    WHEN MONTH(aid.active_date) BETWEEN 8 AND 12 THEN 
+      (YEAR(aid.active_date))::VARCHAR(4) || '-' || (YEAR(aid.active_date) + 1)::VARCHAR(4)
+    WHEN MONTH(aid.active_date) BETWEEN 1 AND 7 THEN 
+      (YEAR(aid.active_date) - 1)::VARCHAR(4) || '-' || (YEAR(aid.active_date))::VARCHAR(4)
+    ELSE 
+      NULL  -- Handle cases outside of the specified months if necessary
+  END AS AidYear,
+  aid.firstname AS FieldValue,  -- || middlename
+  'Legal First Name' AS FieldName
+FROM altid_rec as aid
+JOIN id_rec AS idr ON idr.id = aid.id
+WHERE (aid.legalname = 'Y' AND aid.inactive_date IS NULL)
+
+UNION ALL
+
+SELECT
+  id AS StudentId,
+  'LegalName' AS DocumentCode,
+  -- active_date,
+  CASE 
+    WHEN MONTH(active_date) BETWEEN 8 AND 12 THEN 
+      (YEAR(active_date))::VARCHAR(4) || '-' || (YEAR(active_date) + 1)::VARCHAR(4)
+    WHEN MONTH(active_date) BETWEEN 1 AND 7 THEN 
+      (YEAR(active_date) - 1)::VARCHAR(4) || '-' || (YEAR(active_date))::VARCHAR(4)
+    ELSE 
+      NULL
+  END AS AidYear,
+  lastname AS FieldValue,  -- Assuming you have a column for last names
+  'Legal Last Name' AS FieldName
+FROM altid_rec
+ORDER BY id, FieldName;

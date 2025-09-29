@@ -25,7 +25,10 @@ SELECT
   prog.enr_date AS AnticipatedStartDate,
   'TRUE' AS FinancialAidRequested
 FROM id_rec AS id
+-- add adm_rec students with AD stat and AW students
 JOIN profile_rec AS prof ON id.id = prof.id
 JOIN ctry_table AS ctry ON id.ctry = ctry.ctry
 JOIN prog_enr_rec AS prog ON id.id = prog.id
-WHERE prog.acst = 'RENR' OR prog.acst = 'ENRF' OR prog.acst = 'ENRP'
+JOIN adm_rec AS adm ON adm.id = id.id
+WHERE prog.acst IN ('RENR', 'ENRF', 'ENRP') OR (adm.enrstat IN ('AD', 'WD'))
+-- CHANGE FROM ENROLLED TO ADMITTED AS WELL
